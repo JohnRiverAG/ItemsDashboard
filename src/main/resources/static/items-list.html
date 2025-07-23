@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Items</title>
+    <!-- Incluye Tailwind CSS para un estilo rápido y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para la fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Un gris claro para el fondo */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Alinea al inicio para que el contenido no se centre verticalmente */
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px; /* Más padding en la parte superior */
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px; /* Ancho máximo para la tabla */
+            width: 100%;
+            animation: fadeIn 0.8s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .table-container {
+            overflow-x: auto; /* Permite scroll horizontal en pantallas pequeñas */
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse; /* Colapsa los bordes de la tabla */
+            margin-top: 20px;
+        }
+        .items-table th, .items-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb; /* Borde inferior suave */
+        }
+        .items-table th {
+            background-color: #f9fafb; /* Fondo ligeramente gris para los encabezados */
+            font-weight: 600;
+            color: #4b5563;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+        .items-table tbody tr:hover {
+            background-color: #f3f4f6; /* Cambio de color al pasar el ratón */
+        }
+        .message-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.success {
+            background-color: #d1fae5;
+            color: #065f46;
+            opacity: 1;
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            opacity: 1;
+        }
+        .message-box.info {
+            background-color: #e0f2fe; /* Azul claro */
+            color: #0c4a6e; /* Azul oscuro */
+            opacity: 1;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #6366f1; /* Azul más oscuro para el botón de volver */
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .back-link:hover {
+            background-color: #4f46e5;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Items Almacenados</h1>
+
+        <div id="messageBox" class="message-box info">Cargando ítems...</div>
+
+        <div class="table-container">
+            <table id="itemsTable" class="items-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Precio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los datos de los ítems se insertarán aquí -->
+                </tbody>
+            </table>
+        </div>
+
+        <a href="/" class="back-link">Volver al formulario de añadir</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const itemsTableBody = document.querySelector('#itemsTable tbody');
+            const messageBox = document.getElementById('messageBox');
+
+            // Función para mostrar mensajes
+            function showMessage(msg, type) {
+                messageBox.innerHTML = msg;
+                messageBox.className = `message-box ${type}`;
+                // Opcional: ocultar el mensaje después de un tiempo
+                // setTimeout(() => {
+                //     messageBox.classList.remove(type);
+                //     messageBox.innerHTML = '';
+                // }, 5000);
+            }
+
+            try {
+                const response = await fetch('/api/items'); // Llama a tu endpoint REST
+                if (response.ok) {
+                    const items = await response.json();
+
+                    if (items.length === 0) {
+                        showMessage('No hay ítems almacenados en la base de datos.', 'info');
+                    } else {
+                        items.forEach(item => {
+                            const row = itemsTableBody.insertRow();
+                            const idCell = row.insertCell();
+                            const nameCell = row.insertCell();
+                            const priceCell = row.insertCell();
+
+                            idCell.textContent = item.item_id;
+                            nameCell.textContent = item.item_name;
+                            priceCell.textContent = item.item_price.toFixed(2) + ' €'; // Formato de moneda
+                        });
+                        showMessage('Ítems cargados correctamente.', 'success');
+                    }
+                } else {
+                    const errorText = await response.text();
+                    showMessage(`Error al cargar los ítems: ${response.status} - ${errorText || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error de red o al procesar la solicitud:', error);
+                showMessage(`No se pudo conectar con el servidor para cargar los ítems. Error: ${error.message}`, 'error');
+            }
+        });
+    </script>
+</body>
+</html>
