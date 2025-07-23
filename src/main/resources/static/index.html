@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Items</title>
+    <!-- Incluye Tailwind CSS para un estilo rápido y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para la fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Un gris claro para el fondo */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Asegura que ocupe toda la altura de la ventana */
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box; /* Incluye padding en el tamaño total */
+        }
+        .container {
+            background-color: #ffffff; /* Fondo blanco para el contenedor */
+            border-radius: 12px; /* Esquinas más redondeadas */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Sombra más pronunciada */
+            padding: 40px;
+            max-width: 500px; /* Ancho máximo para el formulario */
+            width: 100%;
+            animation: fadeIn 0.8s ease-out; /* Animación de entrada */
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600; /* Texto más negrita para las etiquetas */
+            color: #333;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db; /* Borde más suave */
+            border-radius: 8px; /* Bordes redondeados para inputs */
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #4f46e5; /* Borde morado al enfocar */
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); /* Sombra de enfoque */
+        }
+        .submit-button {
+            width: 100%;
+            padding: 14px 20px;
+            background-color: #4f46e5; /* Morado vibrante para el botón */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3); /* Sombra para el botón */
+        }
+        .submit-button:hover {
+            background-color: #4338ca; /* Morado más oscuro al pasar el ratón */
+            transform: translateY(-2px); /* Pequeño efecto de elevación */
+        }
+        .message-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+            opacity: 0; /* Inicialmente oculto */
+            transition: opacity 0.5s ease-in-out;
+        }
+        .message-box.success {
+            background-color: #d1fae5; /* Verde claro */
+            color: #065f46; /* Verde oscuro */
+            opacity: 1;
+        }
+        .message-box.error {
+            background-color: #fee2e2; /* Rojo claro */
+            color: #991b1b; /* Rojo oscuro */
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Añadir Nuevo Ítem</h1>
+
+        <form id="itemForm" class="space-y-6">
+            <div class="form-group">
+                <label for="itemName" class="form-label">Nombre del Ítem:</label>
+                <input type="text" id="itemName" name="item_name" class="form-input" required>
+            </div>
+
+            <div class="form-group">
+                <label for="itemPrice" class="form-label">Precio del Ítem:</label>
+                <input type="number" id="itemPrice" name="item_price" class="form-input" step="0.01" required>
+            </div>
+
+            <button type="submit" class="submit-button">Guardar Ítem</button>
+        </form>
+
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        document.getElementById('itemForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Evita el envío tradicional del formulario
+
+            const itemName = document.getElementById('itemName').value;
+            const itemPrice = parseFloat(document.getElementById('itemPrice').value);
+            const messageBox = document.getElementById('messageBox');
+
+            // Limpiar mensajes anteriores
+            messageBox.innerHTML = '';
+            messageBox.className = 'message-box'; // Resetear clases
+
+            if (isNaN(itemPrice)) {
+                messageBox.classList.add('error');
+                messageBox.innerHTML = 'Por favor, introduce un precio válido.';
+                return;
+            }
+
+            const itemData = {
+                item_name: itemName,
+                item_price: itemPrice
+            };
+
+            try {
+                const response = await fetch('/api/items', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(itemData)
+                });
+
+                if (response.ok) {
+                    const newItem = await response.json();
+                    messageBox.classList.add('success');
+                    messageBox.innerHTML = `Ítem "${newItem.item_name}" (ID: ${newItem.item_id}) guardado con éxito.`;
+                    // Limpiar el formulario
+                    document.getElementById('itemForm').reset();
+                } else {
+                    const errorText = await response.text();
+                    messageBox.classList.add('error');
+                    messageBox.innerHTML = `Error al guardar el ítem: ${response.status} - ${errorText || 'Error desconocido'}`;
+                }
+            } catch (error) {
+                console.error('Error de red o al procesar la solicitud:', error);
+                messageBox.classList.add('error');
+                messageBox.innerHTML = `No se pudo conectar con el servidor. Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
