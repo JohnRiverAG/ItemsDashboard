@@ -24,7 +24,7 @@
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             padding: 40px;
-            max-width: 800px; /* Ancho máximo para la tabla */
+            max-width: 900px; /* Ancho máximo para la tabla */
             width: 100%;
             animation: fadeIn 0.8s ease-out;
         }
@@ -54,6 +54,31 @@
         }
         .items-table tbody tr:hover {
             background-color: #f3f4f6; /* Cambio de color al pasar el ratón */
+        }
+        .action-button {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            margin-right: 8px; /* Espacio entre botones */
+        }
+        .edit-button {
+            background-color: #3b82f6; /* Azul */
+            color: white;
+        }
+        .edit-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+        .delete-button {
+            background-color: #ef4444; /* Rojo */
+            color: white;
+        }
+        .delete-button:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
         }
         .message-box {
             margin-top: 20px;
@@ -94,6 +119,101 @@
             background-color: #4f46e5;
             transform: translateY(-1px);
         }
+
+        /* Estilos para el modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content {
+            transform: translateY(0);
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: color 0.2s ease;
+        }
+        .modal-close-button:hover {
+            color: #374151;
+        }
+        .modal-title {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        .modal-form-group {
+            margin-bottom: 20px;
+        }
+        .modal-form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        .modal-form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .modal-form-input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .modal-submit-button {
+            width: 100%;
+            padding: 14px 20px;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        }
+        .modal-submit-button:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -109,6 +229,7 @@
                         <th>ID</th>
                         <th>Nombre</th>
                         <th>Precio</th>
+                        <th>Acciones</th> <!-- Nueva columna para acciones -->
                     </tr>
                 </thead>
                 <tbody>
@@ -120,10 +241,38 @@
         <a href="/" class="back-link">Volver al formulario de añadir</a>
     </div>
 
+    <!-- Modal para editar item -->
+    <div id="editItemModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-button" id="closeModalButton">&times;</button>
+            <h2 class="modal-title">Editar Ítem</h2>
+            <form id="editItemForm" class="space-y-6">
+                <input type="hidden" id="editItemId">
+                <div class="modal-form-group">
+                    <label for="editItemName" class="modal-form-label">Nombre del Ítem:</label>
+                    <input type="text" id="editItemName" name="item_name" class="modal-form-input" required>
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="editItemPrice" class="modal-form-label">Precio del Ítem:</label>
+                    <input type="number" id="editItemPrice" name="item_price" class="modal-form-input" step="0.01" required>
+                </div>
+
+                <button type="submit" class="modal-submit-button">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
             const itemsTableBody = document.querySelector('#itemsTable tbody');
             const messageBox = document.getElementById('messageBox');
+            const editItemModal = document.getElementById('editItemModal');
+            const closeModalButton = document.getElementById('closeModalButton');
+            const editItemForm = document.getElementById('editItemForm');
+            const editItemIdInput = document.getElementById('editItemId');
+            const editItemNameInput = document.getElementById('editItemName');
+            const editItemPriceInput = document.getElementById('editItemPrice');
 
             // Función para mostrar mensajes
             function showMessage(msg, type) {
@@ -136,34 +285,145 @@
                 // }, 5000);
             }
 
-            try {
-                const response = await fetch('/api/items'); // Llama a tu endpoint REST
-                if (response.ok) {
-                    const items = await response.json();
+            // Función para cargar los ítems en la tabla
+            async function loadItems() {
+                itemsTableBody.innerHTML = ''; // Limpiar tabla antes de recargar
+                showMessage('Cargando ítems...', 'info');
+                try {
+                    const response = await fetch('/api/items'); // Llama a tu endpoint REST
+                    if (response.ok) {
+                        const items = await response.json();
 
-                    if (items.length === 0) {
-                        showMessage('No hay ítems almacenados en la base de datos.', 'info');
+                        if (items.length === 0) {
+                            showMessage('No hay ítems almacenados en la base de datos.', 'info');
+                        } else {
+                            items.forEach(item => {
+                                const row = itemsTableBody.insertRow();
+                                row.setAttribute('data-item-id', item.item_id); // Almacenar ID en la fila
+
+                                const idCell = row.insertCell();
+                                const nameCell = row.insertCell();
+                                const priceCell = row.insertCell();
+                                const actionsCell = row.insertCell(); // Celda para acciones
+
+                                idCell.textContent = item.item_id;
+                                nameCell.textContent = item.item_name;
+                                priceCell.textContent = item.item_price.toFixed(2) + ' €'; // Formato de moneda
+
+                                // Botón de Editar
+                                const editButton = document.createElement('button');
+                                editButton.textContent = 'Editar';
+                                editButton.classList.add('action-button', 'edit-button');
+                                editButton.addEventListener('click', () => openEditModal(item));
+                                actionsCell.appendChild(editButton);
+
+                                // Botón de Eliminar
+                                const deleteButton = document.createElement('button');
+                                deleteButton.textContent = 'Eliminar';
+                                deleteButton.classList.add('action-button', 'delete-button');
+                                deleteButton.addEventListener('click', () => deleteItem(item.item_id, item.item_name));
+                                actionsCell.appendChild(deleteButton);
+                            });
+                            showMessage('Ítems cargados correctamente.', 'success');
+                        }
                     } else {
-                        items.forEach(item => {
-                            const row = itemsTableBody.insertRow();
-                            const idCell = row.insertCell();
-                            const nameCell = row.insertCell();
-                            const priceCell = row.insertCell();
-
-                            idCell.textContent = item.item_id;
-                            nameCell.textContent = item.item_name;
-                            priceCell.textContent = item.item_price.toFixed(2) + ' €'; // Formato de moneda
-                        });
-                        showMessage('Ítems cargados correctamente.', 'success');
+                        const errorText = await response.text();
+                        showMessage(`Error al cargar los ítems: ${response.status} - ${errorText || 'Error desconocido'}`, 'error');
                     }
-                } else {
-                    const errorText = await response.text();
-                    showMessage(`Error al cargar los ítems: ${response.status} - ${errorText || 'Error desconocido'}`, 'error');
+                } catch (error) {
+                    console.error('Error de red o al procesar la solicitud:', error);
+                    showMessage(`No se pudo conectar con el servidor para cargar los ítems. Error: ${error.message}`, 'error');
                 }
-            } catch (error) {
-                console.error('Error de red o al procesar la solicitud:', error);
-                showMessage(`No se pudo conectar con el servidor para cargar los ítems. Error: ${error.message}`, 'error');
             }
+
+            // Abrir modal de edición
+            function openEditModal(item) {
+                editItemIdInput.value = item.item_id;
+                editItemNameInput.value = item.item_name;
+                editItemPriceInput.value = item.item_price;
+                editItemModal.classList.add('show');
+            }
+
+            // Cerrar modal de edición
+            closeModalButton.addEventListener('click', () => {
+                editItemModal.classList.remove('show');
+            });
+
+            // Cerrar modal al hacer clic fuera de él
+            editItemModal.addEventListener('click', (event) => {
+                if (event.target === editItemModal) {
+                    editItemModal.classList.remove('show');
+                }
+            });
+
+            // Enviar formulario de edición
+            editItemForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const id = editItemIdInput.value;
+                const name = editItemNameInput.value;
+                const price = parseFloat(editItemPriceInput.value);
+
+                if (isNaN(price)) {
+                    showMessage('Por favor, introduce un precio válido.', 'error');
+                    return;
+                }
+
+                const itemData = {
+                    item_name: name,
+                    item_price: price
+                };
+
+                try {
+                    const response = await fetch(`/api/items/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(itemData)
+                    });
+
+                    if (response.ok) {
+                        showMessage('Ítem actualizado con éxito.', 'success');
+                        editItemModal.classList.remove('show'); // Cerrar modal
+                        loadItems(); // Recargar la tabla
+                    } else {
+                        const errorText = await response.text();
+                        showMessage(`Error al actualizar el ítem: ${response.status} - ${errorText || 'Error desconocido'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error de red o al procesar la solicitud de actualización:', error);
+                    showMessage(`No se pudo conectar con el servidor para actualizar el ítem. Error: ${error.message}`, 'error');
+                }
+            });
+
+            // Función para eliminar un ítem
+            async function deleteItem(id, name) {
+                // Usar un modal de confirmación en lugar de alert/confirm
+                if (!confirm(`¿Estás seguro de que quieres eliminar el ítem "${name}" (ID: ${id})?`)) {
+                    return; // Si el usuario cancela, no hacer nada
+                }
+
+                try {
+                    const response = await fetch(`/api/items/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        showMessage(`Ítem "${name}" eliminado con éxito.`, 'success');
+                        loadItems(); // Recargar la tabla
+                    } else {
+                        const errorText = await response.text();
+                        showMessage(`Error al eliminar el ítem: ${response.status} - ${errorText || 'Error desconocido'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error de red o al procesar la solicitud de eliminación:', error);
+                    showMessage(`No se pudo conectar con el servidor para eliminar el ítem. Error: ${error.message}`, 'error');
+                }
+            }
+
+            // Cargar los ítems al cargar la página
+            loadItems();
         });
     </script>
 </body>
